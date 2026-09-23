@@ -1,0 +1,6 @@
+{
+  "name": "E-SMART ENGLISH KIDS",
+  "description": "Nền tảng học Tiếng Anh Tiểu học thông minh bám sát Chương trình GDPT 2018 và SGK Global Success Lớp 1 & Lớp 2 với AI chấm phát âm và Fun Time vui nhộn.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
