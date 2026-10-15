@@ -1028,14 +1028,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer shadow-md"
               >
                 Create Student Profile
+                        <div className="pt-3">
+              <button
+                type="submit"
+                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer shadow-md"
+              >
+                Create Student Profile
               </button>
             </div>
           </form>
-                 </div>
-        </form>
-      </div>
-    )}
+        </div>
+      )}
 
+      {/* Quick Paste Modal */}
+      {showPasteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
     {/* Quick Paste Modal */}
     {showPasteModal && (
       {/* Quick Paste Modal */}
