@@ -186,18 +186,20 @@ export const Header: React.FC<HeaderProps> = ({
                 onOpenApiKeyModal();
               }}
               title="Cài đặt Settings (Gemini API Key & Model)"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-rose-400 dark:border-rose-600 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/80 transition-all cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
             >
               <KeyRound className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-              <span className="text-[11px] font-black text-rose-600 dark:text-rose-300">
-                Lấy API key để sử dụng app
+              <span className="text-[11px] font-black text-rose-600 dark:text-rose-300 hidden md:inline">
+                API Key
               </span>
               {hasApiKey ? (
-                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold" title="API key đã lưu và đang hoạt động">
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold" title="API key đã lưu và đang hoạt động">
                   ĐÃ LƯU
                 </span>
               ) : (
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-bold text-[9px] animate-pulse">
+                  CHƯA CÓ
+                </span>
               )}
             </button>
 
