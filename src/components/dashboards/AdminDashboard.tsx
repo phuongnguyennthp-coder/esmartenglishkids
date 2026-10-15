@@ -153,7 +153,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
 
       const rows = res.rows;
-      // Reconcile / Merge rows with existing students
       const merged: StudentRecord[] = rows.map((r, i) => {
         const existing = students.find(
           (s) => s.studentId === r.studentId || (s.fullName === r.fullName && s.className === r.className)
@@ -243,7 +242,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (text) {
         const rows = parseGoogleSheetCSV(text);
         if (rows.length > 0) {
-          const merged: StudentRecord[] = rows.map((r, i) => {
+          const merged: StudentRecord[] = rows.map((r) => {
             const existing = students.find((s) => s.studentId === r.studentId);
             if (existing) return existing;
             return {
@@ -1028,23 +1027,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer shadow-md"
               >
                 Create Student Profile
-                        <div className="pt-3">
-              <button
-                type="submit"
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm cursor-pointer shadow-md"
-              >
-                Create Student Profile
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Quick Paste Modal */}
-      {showPasteModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-    {/* Quick Paste Modal */}
-    {showPasteModal && (
       {/* Quick Paste Modal */}
       {showPasteModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
