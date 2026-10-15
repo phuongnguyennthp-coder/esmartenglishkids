@@ -5,7 +5,7 @@ import {
   loadClassroomTheme,
   saveClassroomTheme,
   WALLPAPER_PRESETS,
-} from '../../utils/themeManager';
+} from '../../utils/ThemeManager';
 import {
   getAllCustomAudios,
   getSavedSpeechRate,
