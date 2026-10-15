@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Volume2, BookOpen, X, Sparkles, Filter, ExternalLink } from 'lucide-react';
 import { GRADE_1_UNITS, GRADE_2_UNITS } from '../../data/curriculumData';
+import { getActiveUnits } from '../../utils/curriculumManager';
 import { speakText, soundManager } from '../../utils/audio';
 
 interface DictionaryModalProps {
@@ -19,7 +20,7 @@ export const DictionaryModal: React.FC<DictionaryModalProps> = ({
   const [selectedUnit, setSelectedUnit] = useState<string>('all');
   const [playingWord, setPlayingWord] = useState<string | null>(null);
 
-  // Aggregate all words across units
+  // Aggregate all words across units (combining default and published units)
   const allWords = useMemo(() => {
     const list: Array<{
       id: string;
@@ -36,7 +37,7 @@ export const DictionaryModal: React.FC<DictionaryModalProps> = ({
       unitTitleVi: string;
     }> = [];
 
-    const units = [...GRADE_1_UNITS, ...GRADE_2_UNITS];
+    const units = [...getActiveUnits(1), ...getActiveUnits(2)];
     units.forEach((u) => {
       u.vocabulary.forEach((v) => {
         list.push({

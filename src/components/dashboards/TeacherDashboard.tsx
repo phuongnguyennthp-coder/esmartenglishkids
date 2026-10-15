@@ -22,7 +22,10 @@ import { StudentRecord, PraiseLetter, Certificate, TEACHERS, getTeacherForClass 
 import { soundManager, speakText } from '../../utils/audio';
 import { exportStudentsToCSV, downloadCSV } from '../../utils/googleSheets';
 import { GRADE_1_UNITS, GRADE_2_UNITS, GRADE_1_FUN_TIMES, GRADE_2_FUN_TIMES } from '../../data/curriculumData';
-import { generatePraiseLetterAI } from '../../services/geminiService';
+import { CurriculumImportCenter } from '../curriculum/CurriculumImportCenter';
+import { ClassDojoCompetition } from '../competition/ClassDojoCompetition';
+import { ThemeCustomizerModal } from '../common/ThemeCustomizerModal';
+import { ExternalLearningLinks } from '../links/ExternalLearningLinks';
 
 interface TeacherDashboardProps {
   students: StudentRecord[];
@@ -30,6 +33,7 @@ interface TeacherDashboardProps {
   onSelectStudent: (studentId: string) => void;
   onGeneratePraiseLetter: (studentId: string, letter: PraiseLetter) => void;
   onIssueCertificate: (studentId: string, cert: Certificate) => void;
+  onCurriculumChanged?: () => void;
 }
 
 export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
@@ -38,6 +42,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   onSelectStudent,
   onGeneratePraiseLetter,
   onIssueCertificate,
+  onCurriculumChanged,
 }) => {
   const isVi = language === 'vi';
 
@@ -50,6 +55,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [copyToast, setCopyToast] = useState<string | null>(null);
   const [praiseError, setPraiseError] = useState<string | null>(null);
   const [showWorksheetModal, setShowWorksheetModal] = useState<boolean>(false);
+  const [showCurriculumCenter, setShowCurriculumCenter] = useState<boolean>(false);
+  const [showCompetition, setShowCompetition] = useState<boolean>(false);
+  const [showThemeModal, setShowThemeModal] = useState<boolean>(false);
   const [worksheetGrade, setWorksheetGrade] = useState<1 | 2>(1);
   const [worksheetMilestoneIdx, setWorksheetMilestoneIdx] = useState<number>(0);
 
@@ -262,6 +270,42 @@ ${rosterLines}
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
           <button
+            onClick={() => {
+              soundManager.playDing();
+              setShowCompetition(!showCompetition);
+            }}
+            title={isVi ? 'Quản lý thi đua lớp học ClassDojo và 4 biệt đội' : 'Manage ClassDojo competition'}
+            className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-display font-black text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer"
+          >
+            <span>🏆</span>
+            <span>{isVi ? 'Thi Đua ClassDojo' : 'ClassDojo Competition'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playDing();
+              setShowThemeModal(true);
+            }}
+            title={isVi ? 'Tùy biến hình nền, màu sắc và âm thanh lớp học' : 'Customize classroom theme & audio'}
+            className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-display font-black text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer"
+          >
+            <span>🎨</span>
+            <span>{isVi ? 'Giao Diện & Âm Thanh' : 'Theme & Audio'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              soundManager.playDing();
+              setShowCurriculumCenter(!showCurriculumCenter);
+            }}
+            title={isVi ? 'Nhập liệu và quản lý giáo trình Global Success Lớp 1 & Lớp 2' : 'Manage & import curriculum'}
+            className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 text-amber-950 font-display font-black text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-950" />
+            <span>{isVi ? '📚 Nhập Liệu Giáo Trình' : 'Curriculum Import'}</span>
+          </button>
+
+          <button
             onClick={handleCopySTTRoster}
             title={isVi ? 'Sao chép danh sách STT kèm hướng dẫn gửi Zalo cho phụ huynh' : 'Copy student STT roster for parents'}
             className="px-3.5 py-2 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-display font-bold text-xs shadow-md flex items-center gap-1.5 transition-transform hover:scale-105 cursor-pointer"
@@ -291,6 +335,44 @@ ${rosterLines}
           </button>
         </div>
       </div>
+
+      {/* Curriculum Management & Import Center Section */}
+      {showCurriculumCenter && (
+        <div className="mb-8 animate-fade-in">
+          <CurriculumImportCenter
+            currentGrade={selectedGrade === '2' ? 2 : 1}
+            teacherName={
+              selectedTeacherId === 'thanh-thao'
+                ? 'Cô Thanh Thảo'
+                : selectedTeacherId === 'hong-phuong'
+                ? 'Cô Hồng Phượng'
+                : 'Ban Giảng Dạy Tiếng Anh'
+            }
+            onCurriculumChanged={() => {
+              onCurriculumChanged?.();
+            }}
+            onClose={() => setShowCurriculumCenter(false)}
+          />
+        </div>
+      )}
+
+      {/* ClassDojo Competition Section */}
+      {showCompetition && (
+        <div className="mb-8 animate-fade-in">
+          <ClassDojoCompetition
+            students={students}
+            currentTeacherName={
+              selectedTeacherId === 'thanh-thao'
+                ? 'Ms Thanh Thảo'
+                : selectedTeacherId === 'hong-phuong'
+                ? 'Ms Hồng Phượng'
+                : 'Ban Giảng Dạy Tiếng Anh'
+            }
+            isTeacherMode={true}
+            selectedClass={selectedClass === 'all' ? undefined : selectedClass}
+          />
+        </div>
+      )}
 
       {/* Copy Toast Alert */}
       {copyToast && (
@@ -806,6 +888,19 @@ ${rosterLines}
           </div>
         );
       })()}
+
+      {/* External Educational Portals */}
+      <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <ExternalLearningLinks currentGrade={selectedGrade === '2' ? 2 : 1} />
+      </div>
+
+      {/* Theme Customizer Modal */}
+      {showThemeModal && (
+        <ThemeCustomizerModal
+          isOpen={showThemeModal}
+          onClose={() => setShowThemeModal(false)}
+        />
+      )}
 
     </div>
   );

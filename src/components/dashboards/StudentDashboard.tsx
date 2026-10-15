@@ -3,6 +3,7 @@ import { Sparkles, Star, Trophy, Award, BookOpen, Volume2, CheckCircle2, Chevron
 import { GradeLevel, Unit, SpeakingAttempt, ReflectionRecord } from '../../types/curriculum';
 import { StudentRecord, PraiseLetter, Certificate } from '../../types/user';
 import { GRADE_1_UNITS, GRADE_2_UNITS } from '../../data/curriculumData';
+import { getActiveUnits } from '../../utils/curriculumManager';
 import { Mascot } from '../common/Mascot';
 import { VocabularyBuilder } from '../learn/VocabularyBuilder';
 import { SentencePatterns } from '../learn/SentencePatterns';
@@ -16,10 +17,14 @@ import { UnitAssessment } from '../reflect/UnitAssessment';
 import { StudentSuccessCenter } from '../grow/StudentSuccessCenter';
 import { FunTimeHub } from '../funtime/FunTimeHub';
 import { soundManager } from '../../utils/audio';
+import { ClassDojoCompetition } from '../competition/ClassDojoCompetition';
+import { ExternalLearningLinks } from '../links/ExternalLearningLinks';
+import { loadStudents } from '../../utils/storage';
 
 interface StudentDashboardProps {
   currentGrade: GradeLevel;
   student: StudentRecord;
+  students?: StudentRecord[];
   onReward: (stars: number, coins: number, xp: number) => void;
   onCompleteUnit: (unitNumber: number) => void;
   onRecordAttempt: (attempt: SpeakingAttempt) => void;
@@ -39,15 +44,18 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onGeneratePraiseLetter,
   onGenerateCertificate,
   onUnlockBadge,
+  students: passedStudents,
 }) => {
+  const allStudents = passedStudents && passedStudents.length > 0 ? passedStudents : loadStudents();
+
   // STRICT GRADE SEPARATION:
-  // If currentGrade === 1, strictly use GRADE_1_UNITS
-  // If currentGrade === 2, strictly use GRADE_2_UNITS
-  const units = currentGrade === 1 ? GRADE_1_UNITS : GRADE_2_UNITS;
+  // Dynamically retrieves active curriculum (default Global Success + teacher-published custom units)
+  const units = getActiveUnits(currentGrade);
 
   const [selectedUnitIndex, setSelectedUnitIndex] = useState(0);
   const [activeModule, setActiveModule] = useState<number>(1); // 1 to 11
   const [showFunTimeHub, setShowFunTimeHub] = useState(false);
+  const [showCompetition, setShowCompetition] = useState(false);
 
   const currentUnit = units[selectedUnitIndex] || units[0];
 
@@ -159,6 +167,51 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           {showFunTimeHub ? 'Quay lại bài học ◀' : 'VÀO CHƠI NGAY! 🚀'}
         </button>
       </div>
+
+      {/* ClassDojo Competition Fast Access Banner */}
+      <div
+        onClick={() => {
+          soundManager.playStar();
+          setShowCompetition(!showCompetition);
+        }}
+        className="flex items-center justify-between p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-lg cursor-pointer transform hover:scale-[1.01] transition-all border-2 border-emerald-300 dark:border-emerald-700"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-3xl shrink-0">
+            🏆
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-display font-black text-base sm:text-lg tracking-tight">
+                🌟 BẢNG THI ĐUA LỚP HỌC &amp; 4 BIỆT ĐỘI
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 font-black text-[10px]">
+                {student.className}
+              </span>
+            </div>
+            <p className="text-xs text-white/90 font-medium line-clamp-1 sm:line-clamp-none">
+              Theo dõi điểm khen ngợi cá nhân và cùng Biệt đội 🦁🐬🦅🐼 tích luỹ sao!
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="shrink-0 px-4 py-2.5 rounded-2xl bg-white text-emerald-800 font-display font-black text-xs shadow-md cursor-pointer"
+        >
+          {showCompetition ? 'Quay lại bài học ◀' : 'XEM BẢNG ĐIỂM 🏆'}
+        </button>
+      </div>
+
+      {/* Render ClassDojo Competition if active */}
+      {showCompetition && (
+        <div className="animate-fade-in">
+          <ClassDojoCompetition
+            students={allStudents}
+            isTeacherMode={false}
+            selectedClass={student.className}
+          />
+        </div>
+      )}
 
       {/* Unit Selector Strip (Grade 1 or Grade 2 Units) */}
       <div>
@@ -463,6 +516,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             )}
           </>
         )}
+      </div>
+
+      {/* External Educational Portals */}
+      <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
+        <ExternalLearningLinks currentGrade={currentGrade} />
       </div>
 
     </div>

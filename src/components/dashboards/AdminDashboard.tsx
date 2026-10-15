@@ -720,9 +720,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                    <span>✉️ {TEACHERS['thanh-thao'].email}</span>
-                    <span>📞 {TEACHERS['thanh-thao'].phone}</span>
+                  <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 font-bold pt-1">
+                    <span>✓ Trạng thái: Đang giảng dạy</span>
+                    <span>Quyền: Giáo viên bộ môn</span>
                   </div>
                 </div>
               </div>
@@ -772,9 +772,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                    <span>✉️ {TEACHERS['hong-phuong'].email}</span>
-                    <span>📞 {TEACHERS['hong-phuong'].phone}</span>
+                  <div className="flex items-center justify-between text-[11px] text-indigo-700 dark:text-indigo-400 font-bold pt-1">
+                    <span>✓ Trạng thái: Đang giảng dạy</span>
+                    <span>Quyền: Giáo viên bộ môn</span>
                   </div>
                 </div>
               </div>
