@@ -40,6 +40,9 @@ import { ParentDashboard } from './components/dashboards/ParentDashboard';
 import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { StudentLoginGate } from './components/auth/StudentLoginGate';
 import { ApiKeyModal } from './components/common/ApiKeyModal';
+import { MsPhuongAiChatbox } from './components/ai/MsPhuongAiChatbox';
+import { applyThemeToDOM } from './utils/themeManager';
+import { getActiveUnits } from './utils/curriculumManager';
 
 export default function App() {
   const [students, setStudents] = useState<StudentRecord[]>(() => loadStudents());
@@ -66,6 +69,7 @@ export default function App() {
       root.classList.remove('dark');
     }
     saveThemeMode(themeMode);
+    applyThemeToDOM();
   }, [themeMode]);
 
   // Sync sound manager
@@ -232,6 +236,7 @@ export default function App() {
               key={`student-dash-${currentGrade}-${curriculumVersion}`}
               currentGrade={currentGrade}
               student={currentStudent}
+              students={students}
               onReward={handleReward}
               onCompleteUnit={handleCompleteUnit}
               onRecordAttempt={handleRecordAttempt}
@@ -319,6 +324,15 @@ export default function App() {
           onClose={() => setShowApiKeyModal(false)}
         />
       )}
+
+      {/* Ms Phuong AI Learning Buddy */}
+      <MsPhuongAiChatbox
+        currentRole={currentRole}
+        activeUnit={getActiveUnits(currentGrade)[0]}
+        currentGrade={currentGrade}
+        studentName={currentStudent?.fullName}
+        onOpenApiKeyModal={() => setShowApiKeyModal(true)}
+      />
 
     </div>
   );
