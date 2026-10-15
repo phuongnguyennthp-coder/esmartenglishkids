@@ -3,14 +3,14 @@ import { GradeLevel, ReflectionRecord, SpeakingAttempt } from '../types/curricul
 import { Certificate, GoogleSheetsSyncConfig, PraiseLetter, StudentRecord, UserRole, GeminiModelId } from '../types/user';
 
 const STORAGE_KEYS = {
-  STUDENTS: 'esk_students_v3',
-  CURRENT_STUDENT_ID: 'esk_current_student_id_v3',
-  AUTH_STUDENT_ID: 'esk_authenticated_student_id_v3',
+  STUDENTS: 'esk_students_v4',
+  CURRENT_STUDENT_ID: 'esk_current_student_id_v4',
+  AUTH_STUDENT_ID: 'esk_authenticated_student_id_v4',
   CURRENT_ROLE: 'esk_current_role_v1',
   CURRENT_GRADE: 'esk_current_grade_v1',
   THEME_MODE: 'esk_theme_mode_v1',
   LANGUAGE: 'esk_ui_language_v1',
-  SHEET_CONFIG: 'esk_sheet_config_v3',
+  SHEET_CONFIG: 'esk_sheet_config_v4',
   USER_API_KEY: 'esk_user_gemini_api_key_v1',
   SELECTED_MODEL: 'esk_selected_gemini_model_v1',
 };
@@ -85,6 +85,7 @@ export function normalizeName(str: string): string {
 
 /**
  * Authenticates a student by their Name and assigned Roll Number (STT) or Student ID
+ * Highly forgiving for primary school students (supports full name, first name, diacritic-free, and relative class STT)
  */
 export function authenticateStudent(
   nameInput: string,
@@ -103,34 +104,71 @@ export function authenticateStudent(
     return { success: false, message: 'Vui lòng nhập Số thứ tự (STT) được cô giáo cấp!' };
   }
 
-  // Filter by class if selected
-  const candidatePool = classFilter && classFilter !== 'all'
-    ? students.filter((s) => s.className.toLowerCase() === classFilter.toLowerCase())
-    : students;
+  const inputWords = cleanName.split(' ').filter(Boolean);
+  const inputLastName = inputWords[inputWords.length - 1]; // Tên chính (e.g. "vy")
 
-  const found = candidatePool.find((s) => {
+  const checkMatch = (s: StudentRecord) => {
     const sName = normalizeName(s.fullName);
-    const nameMatches = sName === cleanName || sName.includes(cleanName) || cleanName.includes(sName);
+    const sWords = sName.split(' ').filter(Boolean);
+    const sGivenName = sWords[sWords.length - 1]; // Tên chính của học sinh (e.g. "vy")
 
-    // Match by numerical STT or exact studentId
+    // Match STT:
+    // 1. Continuous STT across school (1 to 140)
+    // 2. Relative STT within class (1 to 35)
+    // 3. Exact studentId (e.g. G1-001)
+    const relClassStt = s.stt > 105 ? s.stt - 105 : s.stt > 70 ? s.stt - 70 : s.stt > 35 ? s.stt - 35 : s.stt;
     const sttMatches =
-      (!isNaN(cleanSttNum) && s.stt === cleanSttNum) ||
+      (!isNaN(cleanSttNum) && (s.stt === cleanSttNum || relClassStt === cleanSttNum)) ||
       s.studentId.toLowerCase() === cleanSttStr.toLowerCase() ||
-      s.studentId.toLowerCase().includes(cleanSttStr.toLowerCase());
+      s.studentId.replace(/[^0-9]/g, '') === cleanSttStr.replace(/[^0-9]/g, '');
 
-    return nameMatches && sttMatches;
-  });
+    if (!sttMatches) return false;
 
-  if (found) {
-    saveAuthStudentId(found.studentId);
-    saveCurrentStudentId(found.studentId);
-    return { success: true, student: found };
+    // Match Name:
+    const nameMatches =
+      sName === cleanName ||
+      sName.includes(cleanName) ||
+      cleanName.includes(sName) ||
+      sGivenName === inputLastName ||
+      inputWords.includes(sGivenName) ||
+      sWords.includes(inputLastName);
+
+    return nameMatches;
+  };
+
+  // If a class filter was selected, try within that class first
+  if (classFilter && classFilter !== 'all') {
+    const classPool = students.filter(
+      (s) => s.className.toLowerCase() === classFilter.toLowerCase()
+    );
+    const foundInClass = classPool.find(checkMatch);
+    if (foundInClass) {
+      saveAuthStudentId(foundInClass.studentId);
+      saveCurrentStudentId(foundInClass.studentId);
+      return { success: true, student: foundInClass };
+    }
+  }
+
+  // Fallback: search the entire student body
+  const foundGlobal = students.find(checkMatch);
+  if (foundGlobal) {
+    saveAuthStudentId(foundGlobal.studentId);
+    saveCurrentStudentId(foundGlobal.studentId);
+    return { success: true, student: foundGlobal };
   }
 
   return {
     success: false,
     message: 'Tên hoặc Số thứ tự (STT) chưa trùng khớp với danh sách của cô giáo. Con hãy kiểm tra lại nhé!',
   };
+}
+
+/**
+ * Restores and saves the default pristine 140-student roster
+ */
+export function restoreDefault140Students(): StudentRecord[] {
+  saveStudents(INITIAL_STUDENTS);
+  return INITIAL_STUDENTS;
 }
 
 export function loadStudents(): StudentRecord[] {
@@ -141,7 +179,20 @@ export function loadStudents(): StudentRecord[] {
       saveStudents(INITIAL_STUDENTS);
       return INITIAL_STUDENTS;
     }
-    return JSON.parse(raw);
+    const parsed: StudentRecord[] = JSON.parse(raw);
+    
+    // Auto-repair if data was previously corrupted (e.g. has fewer than 100 students or has '(x)' class)
+    const isCorrupted =
+      !Array.isArray(parsed) ||
+      parsed.length < 50 ||
+      parsed.some((s) => s.className === 'x' || s.className === '(x)' || s.fullName.includes('HỌ VÀ TÊN'));
+
+    if (isCorrupted) {
+      saveStudents(INITIAL_STUDENTS);
+      return INITIAL_STUDENTS;
+    }
+
+    return parsed;
   } catch {
     return INITIAL_STUDENTS;
   }
