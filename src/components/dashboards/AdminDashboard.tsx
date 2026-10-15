@@ -3,12 +3,16 @@ import { Settings, Users, Database, RefreshCw, Sparkles, CheckCircle2, Download,
 import { StudentRecord, GoogleSheetsSyncConfig, getTeacherForClass, TEACHERS } from '../../types/user';
 import { soundManager } from '../../utils/audio';
 import { parseGoogleSheetCSV, exportStudentsToCSV, downloadCSV, generateSampleGoogleSheetCSV, fetchGoogleSheetOnline } from '../../utils/googleSheets';
+import { restoreDefault140Students } from '../../utils/storage';
+import { INITIAL_STUDENTS } from '../../data/initialStudents';
+import { CurriculumImportCenter } from '../curriculum/CurriculumImportCenter';
 
 interface AdminDashboardProps {
   students: StudentRecord[];
   sheetConfig: GoogleSheetsSyncConfig;
   onUpdateSheetConfig: (config: GoogleSheetsSyncConfig) => void;
   onUpdateStudents: (students: StudentRecord[]) => void;
+  onCurriculumChanged?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -16,8 +20,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   sheetConfig,
   onUpdateSheetConfig,
   onUpdateStudents,
+  onCurriculumChanged,
 }) => {
-  const [activeTab, setActiveTab] = useState<'sync' | 'students' | 'teachers' | 'ai' | 'system'>('sync');
+  const [activeTab, setActiveTab] = useState<'sync' | 'students' | 'teachers' | 'ai' | 'curriculum' | 'system'>('sync');
   const [sheetUrlInput, setSheetUrlInput] = useState(sheetConfig.sheetUrl);
   const [syncInterval, setSyncInterval] = useState(sheetConfig.autoSyncIntervalMinutes);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -36,6 +41,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     parentPhone: '',
   });
 
+  // Paste Direct Sheet Modal
+  const [showPasteModal, setShowPasteModal] = useState(false);
+  const [pasteText, setPasteText] = useState('');
+
   // AI Configuration State
   const [aiSettings, setAiSettings] = useState({
     model: 'gemini-3-flash-preview',
@@ -43,6 +52,93 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     languageEnforcement: '100% English for Kids',
     praiseLetterSigner: 'Assigned Class Teacher (Ms Thanh Thảo / Ms Hồng Phượng)',
   });
+
+  // One-click restore 140 students
+  const handleRestoreDefault140 = () => {
+    soundManager.playVictory();
+    const restored = restoreDefault140Students();
+    onUpdateStudents(restored);
+    const updatedConfig: GoogleSheetsSyncConfig = {
+      ...sheetConfig,
+      lastSyncTimestamp: new Date().toISOString(),
+      syncStatus: 'synced',
+      totalSyncedStudents: restored.length,
+    };
+    onUpdateSheetConfig(updatedConfig);
+    setSyncToast('⚡ Đã nạp thành công trọn vẹn 140 học sinh chuẩn từ Lớp 1/1 đến Lớp 2/4 theo STT 1 đến 140!');
+    setTimeout(() => setSyncToast(null), 6000);
+  };
+
+  // Direct paste import
+  const handleApplyPastedData = () => {
+    if (!pasteText.trim()) return;
+    const rows = parseGoogleSheetCSV(pasteText);
+    if (rows.length === 0) {
+      soundManager.playBuzzer();
+      alert('Không nhận diện được học sinh nào từ nội dung đã dán. Vui lòng kiểm tra lại định dạng bảng!');
+      return;
+    }
+
+    const merged: StudentRecord[] = rows.map((r, i) => {
+      const existing = students.find(
+        (s) => s.studentId === r.studentId || (s.fullName === r.fullName && s.className === r.className)
+      );
+      if (existing) {
+        return {
+          ...existing,
+          stt: r.stt || i + 1,
+          fullName: r.fullName,
+          grade: r.grade,
+          className: r.className,
+          parentName: r.parentName,
+          parentEmail: r.parentEmail,
+          parentPhone: r.parentPhone,
+          status: r.status,
+        };
+      }
+      return {
+        stt: r.stt || i + 1,
+        studentId: r.studentId,
+        fullName: r.fullName,
+        grade: r.grade,
+        className: r.className,
+        parentName: r.parentName,
+        parentEmail: r.parentEmail,
+        parentPhone: r.parentPhone,
+        status: r.status,
+        stars: 30,
+        coins: 60,
+        xp: 120,
+        level: 1,
+        completedUnits: [1],
+        learningTimeMinutes: 45,
+        vocabLearnedCount: 6,
+        averageListeningScore: 88,
+        averageSpeakingScore: 85,
+        phonicsMasteryScore: 88,
+        digitalCitizenshipScore: 95,
+        badgesEarned: [],
+        speakingHistory: [],
+        reflections: [],
+        praiseLetters: [],
+        certificates: [],
+      };
+    });
+
+    onUpdateStudents(merged);
+    const updatedConfig: GoogleSheetsSyncConfig = {
+      ...sheetConfig,
+      lastSyncTimestamp: new Date().toISOString(),
+      syncStatus: 'synced',
+      totalSyncedStudents: merged.length,
+    };
+    onUpdateSheetConfig(updatedConfig);
+    soundManager.playVictory();
+    setShowPasteModal(false);
+    setPasteText('');
+    setSyncToast(`Đã nạp thành công ${merged.length} học sinh từ bảng tính dán trực tiếp!`);
+    setTimeout(() => setSyncToast(null), 5000);
+  };
 
   // Trigger Google Sheet Sync
   const handleSyncNow = async () => {
@@ -340,6 +436,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         >
           🤖 Gemini AI Settings
         </button>
+        <button
+          onClick={() => {
+            soundManager.playDing();
+            setActiveTab('curriculum');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'curriculum'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          📚 Quản Lý Giáo Trình
+        </button>
       </div>
 
       {/* TAB 1: GOOGLE SHEETS SYNC ENGINE */}
@@ -424,18 +533,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Template & Manual Upload Tools */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleRestoreDefault140}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-amber-500/20"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>⚡ Nạp 140 Học Sinh Chuẩn (Lớp 1/1 đến 2/4)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPasteModal(true)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 cursor-pointer shadow-md shadow-emerald-600/20"
+                >
+                  <Database className="w-4 h-4" />
+                  <span>📋 Dán Dữ Liệu Bảng Tính (Quick Paste)</span>
+                </button>
+
                 <button
                   onClick={handleDownloadTemplate}
                   className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  <span>Download Google Sheet Schema Template (.CSV)</span>
+                  <span>Tải Mẫu Schema (.CSV)</span>
                 </button>
 
                 <label className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-slate-700">
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Import / Upload CSV</span>
+                  <span>Tải Lên Tệp CSV</span>
                   <input
                     type="file"
                     accept=".csv"
@@ -446,7 +573,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <span className="text-xs text-slate-400 italic">
-                Các cột chuẩn: STT, Mã HS (Student ID), Họ và tên (Full Name), Lớp (Class), Phụ huynh, SĐT, Email, Trạng thái
+                Các cột chuẩn: STT, Họ và chữ đệm, Tên, Nữ (x), Lớp (1/1 - 2/4), Phụ huynh, SĐT, Email
               </span>
             </div>
           </div>
@@ -730,6 +857,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* TAB 5: CURRICULUM MANAGEMENT & CONTENT INGESTION */}
+      {activeTab === 'curriculum' && (
+        <div className="space-y-6">
+          <CurriculumImportCenter
+            currentGrade={1}
+            teacherName="Admin Quản Trị"
+            onCurriculumChanged={() => {
+              onCurriculumChanged?.();
+            }}
+          />
+        </div>
+      )}
+
       {/* Add Student Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-fade-in">
@@ -891,6 +1031,114 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
           </form>
+        </div>
+      {/* Quick Paste Modal */}
+      {showPasteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-3xl w-full shadow-2xl space-y-5 animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">📋</span>
+                <div>
+                  <h4 className="font-display font-bold text-lg text-slate-900 dark:text-white">
+                    Dán Dữ Liệu Bảng Tính Trực Tiếp (Quick Paste 140 Học Sinh)
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Mở bảng Google Sheets hoặc Excel của bạn, chọn tất cả (Ctrl+A / Cmd+A) rồi sao chép (Ctrl+C / Cmd+C) và dán vào đây!
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                Nội dung sao chép từ Google Sheets / Excel:
+              </label>
+              <textarea
+                rows={8}
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                placeholder="Dán nội dung vào đây (hỗ trợ cả định dạng CSV và copy trực tiếp từ bảng tính)..."
+                className="w-full text-xs font-mono p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
+            {/* Live Preview of parsed rows */}
+            {pasteText.trim() && (
+              <div className="space-y-2">
+                {(() => {
+                  const previewRows = parseGoogleSheetCSV(pasteText);
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                          ✓ Hệ thống nhận diện: {previewRows.length} học sinh
+                        </span>
+                        <span className="text-slate-400 text-[11px]">
+                          Hiển thị 5 học sinh đầu tiên:
+                        </span>
+                      </div>
+                      {previewRows.length > 0 ? (
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden text-xs">
+                          <table className="w-full text-left">
+                            <thead className="bg-slate-100 dark:bg-slate-800 font-bold text-slate-600 dark:text-slate-300 text-[11px]">
+                              <tr>
+                                <th className="p-2">STT</th>
+                                <th className="p-2">Mã HS</th>
+                                <th className="p-2">Họ và tên</th>
+                                <th className="p-2">Lớp</th>
+                                <th className="p-2">Khối</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                              {previewRows.slice(0, 5).map((r) => (
+                                <tr key={r.studentId} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                  <td className="p-2 font-mono font-bold text-amber-600">{r.stt}</td>
+                                  <td className="p-2 font-mono">{r.studentId}</td>
+                                  <td className="p-2 font-bold">{r.fullName}</td>
+                                  <td className="p-2">{r.className}</td>
+                                  <td className="p-2">Lớp {r.grade}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-rose-500 font-bold">
+                          Chưa nhận diện được học sinh nào. Hãy đảm bảo bạn sao chép cả dòng tiêu đề cột hoặc dán nội dung CSV chuẩn.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPasteModal(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyPastedData}
+                disabled={!pasteText.trim()}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs cursor-pointer shadow-md shadow-emerald-600/20"
+              >
+                Lưu và Cập Nhật Danh Sách
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
