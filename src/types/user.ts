@@ -88,8 +88,8 @@ export interface TeacherProfile {
   id: string;
   name: string;
   title: string;
-  email: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   assignedClasses: string[];
 }
 
@@ -100,16 +100,12 @@ export const TEACHERS: Record<string, TeacherProfile> = {
     id: 't-thanh-thao',
     name: 'Ms Thanh Thảo',
     title: 'Primary English Specialist (Grade 1)',
-    email: 'thanhthao.teacher@esmartkids.edu.vn',
-    phone: '0901-234-567',
     assignedClasses: ['Class 1/1', 'Class 1/2'],
   },
   'hong-phuong': {
     id: 't-hong-phuong',
     name: 'Ms Hồng Phượng',
     title: 'Lead Primary English Specialist (Grade 2)',
-    email: 'hongphuong.teacher@esmartkids.edu.vn',
-    phone: '0912-345-678',
     assignedClasses: ['Class 2/3', 'Class 2/4'],
   },
 };
