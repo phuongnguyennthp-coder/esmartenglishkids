@@ -55,6 +55,7 @@ export default function App() {
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(() => !loadUserApiKey());
   const [userApiKey, setUserApiKey] = useState<string>(() => loadUserApiKey());
   const [selectedModel, setSelectedModel] = useState<GeminiModelId>(() => loadSelectedModel());
+  const [curriculumVersion, setCurriculumVersion] = useState<number>(0);
 
   // Sync theme to root html element
   useEffect(() => {
@@ -228,6 +229,7 @@ export default function App() {
             />
           ) : (
             <StudentDashboard
+              key={`student-dash-${currentGrade}-${curriculumVersion}`}
               currentGrade={currentGrade}
               student={currentStudent}
               onReward={handleReward}
@@ -248,6 +250,7 @@ export default function App() {
             onSelectStudent={handleSelectStudent}
             onGeneratePraiseLetter={handleGeneratePraiseLetter}
             onIssueCertificate={handleGenerateCertificate}
+            onCurriculumChanged={() => setCurriculumVersion((v) => v + 1)}
           />
         )}
 
@@ -264,6 +267,7 @@ export default function App() {
             sheetConfig={sheetConfig}
             onUpdateSheetConfig={handleUpdateSheetConfig}
             onUpdateStudents={handleUpdateStudents}
+            onCurriculumChanged={() => setCurriculumVersion((v) => v + 1)}
           />
         )}
       </main>
