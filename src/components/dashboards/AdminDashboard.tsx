@@ -1031,7 +1031,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
           </form>
-        </div>
+                 </div>
+        </form>
+      </div>
+    )}
+
+    {/* Quick Paste Modal */}
+    {showPasteModal && (
       {/* Quick Paste Modal */}
       {showPasteModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
