@@ -41,7 +41,7 @@ import { AdminDashboard } from './components/dashboards/AdminDashboard';
 import { StudentLoginGate } from './components/auth/StudentLoginGate';
 import { ApiKeyModal } from './components/common/ApiKeyModal';
 import { MsPhuongAiChatbox } from './components/ai/MsPhuongAiChatbox';
-import { applyThemeToDOM } from './utils/ThemeManager';
+import { applyThemeToDOM } from './utils/themeManager';
 import { getActiveUnits } from './utils/curriculumManager';
 
 export default function App() {
