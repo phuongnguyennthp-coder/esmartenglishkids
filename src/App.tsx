@@ -222,6 +222,9 @@ export default function App() {
               onSwitchToTeacherMode={() => {
                 handleSelectRole('teacher');
               }}
+              onRegisterStudent={(newStudent) => {
+                handleUpdateStudents([newStudent, ...students]);
+              }}
             />
           ) : (
             <StudentDashboard
