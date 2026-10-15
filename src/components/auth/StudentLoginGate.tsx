@@ -17,8 +17,18 @@ import {
 } from 'lucide-react';
 import { StudentRecord } from '../../types/user';
 import { soundManager } from '../../utils/audio';
-import { authenticateStudent, normalizeName } from '../../utils/storage';
+import { authenticateStudent } from '../../utils/storage';
 import { DictionaryModal } from '../common/DictionaryModal';
+
+const normalizeName = (str: string): string =>
+  (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
 
 interface StudentLoginGateProps {
   students: StudentRecord[];
