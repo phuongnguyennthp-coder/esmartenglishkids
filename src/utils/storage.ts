@@ -72,7 +72,7 @@ export function logoutStudent(): void {
 /**
  * Normalizes text to lowercase without diacritics / accents
  */
-function normalizeName(str: string): string {
+export function normalizeName(str: string): string {
   return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
