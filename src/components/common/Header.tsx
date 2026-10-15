@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Sun, Moon, Sparkles, KeyRound, LogOut, ShieldCheck, Lock } from 'lucide-react';
+import { Volume2, VolumeX, Sun, Moon, Sparkles, KeyRound, LogOut, ShieldCheck, Lock, BookOpen } from 'lucide-react';
 import { StudentRecord, UserRole } from '../../types/user';
 import { soundManager } from '../../utils/audio';
+import { DictionaryModal } from './DictionaryModal';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -46,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [targetRole, setTargetRole] = useState<UserRole>('teacher');
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
+  const [showDictionary, setShowDictionary] = useState(false);
 
   const handleRoleClick = (role: UserRole) => {
     // If student clicks teacher or admin, protect with PIN 1234
@@ -199,6 +201,19 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
+            {/* Dictionary Button */}
+            <button
+              onClick={() => {
+                soundManager.playDing();
+                setShowDictionary(true);
+              }}
+              title="Tra cứu Từ điển Nhí Global Success"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-900 dark:text-amber-200 transition-all cursor-pointer text-xs font-bold shadow-xs"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="hidden sm:inline">Từ điển</span>
+            </button>
+
             {/* Role Switcher Tabs */}
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
               <button
@@ -347,6 +362,15 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </form>
         </div>
+      )}
+
+      {/* Kid Visual Dictionary Modal */}
+      {showDictionary && (
+        <DictionaryModal
+          isOpen={showDictionary}
+          onClose={() => setShowDictionary(false)}
+          initialGrade={currentGrade}
+        />
       )}
     </header>
   );
